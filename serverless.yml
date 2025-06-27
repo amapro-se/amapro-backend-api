@@ -1,0 +1,16 @@
+service: amapro-backend-api
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-northeast-2
+  memorySize: 512
+  timeout: 10
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi: '*'
+package:
+  individually: true
+  patterns:
+    - '!**/*.spec.ts'
