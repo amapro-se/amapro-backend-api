@@ -1,0 +1,8 @@
+[submodule "libs/shared-libs"]
+	path = libs/shared-libs
+	url = https://github.com/amapro-se/amapro-shared-libs.git
+	branch = main
+[submodule "libs/db-infra"]
+	path = libs/db-infra
+	url = https://github.com/amapro-se/amapro-db-infra.git
+	branch = main

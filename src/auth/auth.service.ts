@@ -8,26 +8,9 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { SignupDto, AuthResponseDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
-
-export interface GooglePayload {
-  sub: string;
-  email: string;
-  name: string;
-  picture: string;
-}
-
-export interface User {
-  id: string;
-  provider: string;
-  provider_id: string;
-  email: string;
-  name: string;
-  picture: string;
-  created_at: Date;
-  updated_at: Date;
-}
+import { SignupDto, AuthResponseDto } from '@shared/auth/dto/signup.dto';
+import { LoginDto } from '@shared/auth/dto/login.dto';
+import { GooglePayload } from '@shared/auth/interfaces';
 
 @Injectable()
 export class AuthService {
@@ -69,6 +52,7 @@ export class AuthService {
         picture: payload.picture
       };
     } catch (error) {
+      console.error(error);
       throw new BadRequestException('Google token verification failed');
     }
   }
