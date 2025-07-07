@@ -8,9 +8,9 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { SignupDto, AuthResponseDto } from '@shared/auth/dto/signup.dto';
-import { LoginDto } from '@shared/auth/dto/login.dto';
-import { GooglePayload } from '@shared/auth/interfaces';
+import { SignupDto, AuthResponseDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+import { GooglePayload, User } from './interfaces';
 
 @Injectable()
 export class AuthService {
@@ -51,8 +51,11 @@ export class AuthService {
         name: payload.name,
         picture: payload.picture
       };
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Google token verification failed:', error);
       throw new BadRequestException('Google token verification failed');
     }
   }
@@ -61,18 +64,20 @@ export class AuthService {
     const googlePayload = await this.verifyGoogleToken(signupDto.idToken);
 
     // 기존 사용자 확인
-    const { data: existingUser } = await this.supabase
+    const existingUserResponse = await this.supabase
       .from('users')
       .select('*')
       .eq('email', googlePayload.email)
       .single();
+
+    const existingUser = existingUserResponse.data as User | null;
 
     if (existingUser) {
       throw new ConflictException('이미 가입된 이메일입니다');
     }
 
     // 새 사용자 생성
-    const { data: newUser, error } = await this.supabase
+    const newUserResponse = await this.supabase
       .from('users')
       .insert([
         {
@@ -86,7 +91,9 @@ export class AuthService {
       .select()
       .single();
 
-    if (error) {
+    const newUser = newUserResponse.data as User | null;
+
+    if (newUserResponse.error || !newUser) {
       throw new BadRequestException('사용자 생성에 실패했습니다');
     }
 
@@ -108,11 +115,13 @@ export class AuthService {
     const googlePayload = await this.verifyGoogleToken(loginDto.idToken);
 
     // 기존 사용자 확인
-    const { data: existingUser } = await this.supabase
+    const existingUserResponse = await this.supabase
       .from('users')
       .select('*')
       .eq('email', googlePayload.email)
       .single();
+
+    const existingUser = existingUserResponse.data as User | null;
 
     if (!existingUser) {
       throw new NotFoundException('가입되지 않은 이메일입니다');

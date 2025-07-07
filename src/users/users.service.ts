@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { User } from '../auth/interfaces';
 
 @Injectable()
 export class UsersService {
@@ -17,27 +18,23 @@ export class UsersService {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
-  async findByEmail(email: string) {
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+  async findByEmail(email: string): Promise<User | null> {
+    const response = await this.supabase.from('users').select('*').eq('email', email).single();
 
-    if (error) {
+    if (response.error) {
       return null;
     }
 
-    return data;
+    return response.data as User;
   }
 
-  async findById(id: string) {
-    const { data, error } = await this.supabase.from('users').select('*').eq('id', id).single();
+  async findById(id: string): Promise<User | null> {
+    const response = await this.supabase.from('users').select('*').eq('id', id).single();
 
-    if (error) {
+    if (response.error) {
       return null;
     }
 
-    return data;
+    return response.data as User;
   }
 }

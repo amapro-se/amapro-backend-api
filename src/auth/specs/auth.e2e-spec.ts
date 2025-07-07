@@ -25,7 +25,10 @@ describe('Auth (e2e)', () => {
         .expect((res) => {
           // 실제 Google 토큰 없이는 400 에러가 예상됩니다
           expect(res.status).toBe(400);
-          expect(res.body.message).toContain('Google token verification failed');
+          expect(res.body).toHaveProperty('message');
+          const message = res.body.message;
+          expect(typeof message).toBe('string');
+          expect(message).toContain('Google token verification failed');
         });
     });
 
@@ -35,7 +38,10 @@ describe('Auth (e2e)', () => {
         .send({})
         .expect(400)
         .expect((res) => {
-          expect(res.body.message).toContain('idToken should not be empty');
+          expect(res.body).toHaveProperty('message');
+          const message = res.body.message;
+          expect(typeof message).toBe('string');
+          expect(message).toContain('idToken should not be empty');
         });
     });
 
@@ -59,7 +65,10 @@ describe('Auth (e2e)', () => {
         .expect((res) => {
           // 실제 Google 토큰 없이는 400 에러가 예상됩니다
           expect(res.status).toBe(400);
-          expect(res.body.message).toContain('Google token verification failed');
+          expect(res.body).toHaveProperty('message');
+          const message = res.body.message;
+          expect(typeof message).toBe('string');
+          expect(message).toContain('Google token verification failed');
         });
     });
 
@@ -69,7 +78,10 @@ describe('Auth (e2e)', () => {
         .send({})
         .expect(400)
         .expect((res) => {
-          expect(res.body.message).toContain('idToken should not be empty');
+          expect(res.body).toHaveProperty('message');
+          const message = res.body.message;
+          expect(typeof message).toBe('string');
+          expect(message).toContain('idToken should not be empty');
         });
     });
   });

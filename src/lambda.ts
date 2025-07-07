@@ -1,19 +1,23 @@
-import { APIGatewayProxyEventV2 } from 'aws-lambda';
+import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { configure as serverlessExpress } from '@codegenie/serverless-express';
 import { createNestApplication } from './app.bootstrap';
+import { INestApplication } from '@nestjs/common';
+import { Express } from 'express';
 
 let cachedHandler: ReturnType<typeof serverlessExpress>;
 
 export const handler = async (
   event: APIGatewayProxyEventV2,
-  context: any,
-  callback: () => void,
+  context: Context,
+  callback: () => void
 ) => {
   if (!cachedHandler) {
-    const app = await createNestApplication();
+    const app: INestApplication = await createNestApplication();
     await app.init();
-    const expressApp = app.getHttpAdapter().getInstance();
+    const expressApp = app.getHttpAdapter().getInstance() as Express;
     cachedHandler = serverlessExpress({ app: expressApp });
   }
-  return cachedHandler(event, context, callback);
+
+  const result = cachedHandler(event, context, callback);
+  return result;
 };

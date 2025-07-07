@@ -6,6 +6,20 @@ import { AuthService } from '../auth.service';
 import { SignupDto } from '../dto/signup.dto';
 import { LoginDto } from '../dto/login.dto';
 
+// Mock 타입 정의
+interface MockSupabase {
+  from: jest.Mock;
+}
+
+interface MockGoogleClient {
+  verifyIdToken: jest.Mock;
+}
+
+interface MockAuthService {
+  supabase: MockSupabase;
+  googleClient: MockGoogleClient;
+}
+
 // Mock 모듈들
 jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn().mockImplementation(() => ({
@@ -33,8 +47,7 @@ jest.mock('@supabase/supabase-js', () => ({
 describe('AuthService', () => {
   let service: AuthService;
   let jwtService: JwtService;
-  let configService: ConfigService;
-  let mockSupabase: any;
+  let mockSupabase: MockSupabase;
 
   const mockUser = {
     id: 'test-user-id',
@@ -68,7 +81,7 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
-              const config = {
+              const config: Record<string, string> = {
                 SUPABASE_URL: 'https://test.supabase.co',
                 SUPABASE_KEY: 'test-key',
                 GOOGLE_CLIENT_ID: 'test-client-id',
@@ -85,10 +98,9 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jwtService = module.get<JwtService>(JwtService);
-    configService = module.get<ConfigService>(ConfigService);
 
     // Supabase 모킹
-    mockSupabase = (service as any).supabase;
+    mockSupabase = (service as unknown as MockAuthService).supabase;
   });
 
   describe('verifyGoogleToken', () => {
@@ -97,7 +109,7 @@ describe('AuthService', () => {
         getPayload: jest.fn(() => mockGooglePayload)
       };
 
-      const mockGoogleClient = (service as any).googleClient;
+      const mockGoogleClient = (service as unknown as MockAuthService).googleClient;
       mockGoogleClient.verifyIdToken.mockResolvedValue(mockTicket);
 
       const result = await service.verifyGoogleToken('valid-token');
@@ -110,7 +122,7 @@ describe('AuthService', () => {
     });
 
     it('잘못된 토큰일 때 BadRequestException을 발생시켜야 합니다', async () => {
-      const mockGoogleClient = (service as any).googleClient;
+      const mockGoogleClient = (service as unknown as MockAuthService).googleClient;
       mockGoogleClient.verifyIdToken.mockRejectedValue(new Error('Invalid token'));
 
       await expect(service.verifyGoogleToken('invalid-token')).rejects.toThrow(BadRequestException);
@@ -121,7 +133,7 @@ describe('AuthService', () => {
         getPayload: jest.fn(() => null)
       };
 
-      const mockGoogleClient = (service as any).googleClient;
+      const mockGoogleClient = (service as unknown as MockAuthService).googleClient;
       mockGoogleClient.verifyIdToken.mockResolvedValue(mockTicket);
 
       await expect(service.verifyGoogleToken('token')).rejects.toThrow(BadRequestException);
@@ -169,10 +181,9 @@ describe('AuthService', () => {
         });
 
       // JWT 토큰 생성
-      jest
-        .spyOn(jwtService, 'sign')
-        .mockReturnValueOnce('mock-access-token')
-        .mockReturnValueOnce('mock-refresh-token');
+      const jwtSignSpy = jest.spyOn(jwtService, 'sign');
+      jwtSignSpy.mockReturnValueOnce('mock-access-token');
+      jwtSignSpy.mockReturnValueOnce('mock-refresh-token');
 
       const result = await service.register(signupDto);
 
@@ -225,10 +236,9 @@ describe('AuthService', () => {
         insert: jest.fn().mockResolvedValue({})
       });
 
-      jest
-        .spyOn(jwtService, 'sign')
-        .mockReturnValueOnce('mock-access-token')
-        .mockReturnValueOnce('mock-refresh-token');
+      const jwtSignSpy = jest.spyOn(jwtService, 'sign');
+      jwtSignSpy.mockReturnValueOnce('mock-access-token');
+      jwtSignSpy.mockReturnValueOnce('mock-refresh-token');
 
       const result = await service.login(loginDto);
 
@@ -261,10 +271,9 @@ describe('AuthService', () => {
 
   describe('issueTokens', () => {
     it('JWT 토큰을 성공적으로 발급해야 합니다', async () => {
-      jest
-        .spyOn(jwtService, 'sign')
-        .mockReturnValueOnce('mock-access-token')
-        .mockReturnValueOnce('mock-refresh-token');
+      const jwtSignSpy = jest.spyOn(jwtService, 'sign');
+      jwtSignSpy.mockReturnValueOnce('mock-access-token');
+      jwtSignSpy.mockReturnValueOnce('mock-refresh-token');
 
       mockSupabase.from.mockReturnValue({
         insert: jest.fn().mockResolvedValue({})
@@ -277,7 +286,7 @@ describe('AuthService', () => {
         refreshToken: 'mock-refresh-token'
       });
 
-      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(jwtSignSpy).toHaveBeenCalledTimes(2);
     });
   });
 });
